@@ -1,34 +1,64 @@
 <!DOCTYPE html>
 <html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Leaflet Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
-        #map { height: 100vh; }
+      #map {
+        height: 70vh;
+        /* margin-left: 20vh;
+        margin-right: 20vh; */
+      }
+      #head {
+        height: 30vh;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <head id="head">
+      <p>
+        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Expedita
+        quaerat culpa, rerum officia voluptatum libero, exercitationem ipsa
+        distinctio deserunt eligendi voluptates iure aliquid architecto eum
+        tempore explicabo recusandae esse soluta?
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ipsa in, omnis
+        exercitationem expedita quos laboriosam illum. Ullam facere nihil eos,
+        tempore exercitationem quis porro maxime obcaecati, eaque, consectetur
+        quaerat eveniet.
+      </p>
+    </head>
     <div id="map"></div>
     <script>
-        const map = L.map('map').setView([51.505, -0.09], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+      const map = L.map("map").setView([51.11064, 4.33207], 13);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap contributors",
+      }).addTo(map);
 
-        // Haal markers op van de API
-        async function fetchMarkers() {
-            const response = await fetch('/api/markers');
-            const markers = await response.json();
-            markers.forEach(marker => {
-                L.marker([marker.lat, marker.lng]).addTo(map).bindPopup(marker.name);
+      // Haal markers op van de API en voeg ze toe aan de kaart
+      function fetchMarkers() {
+        fetch("/api/markers")
+          .then((response) => response.json())
+          .then((data) => {
+            data.forEach((marker) => {
+              if (marker.lat && marker.lng) {
+                L.marker([marker.lat, marker.lng])
+                  .addTo(map)
+                  .bindPopup(marker.name);
+              } else {
+                console.error(`Invalid marker coordinates: ${marker}`);
+              }
             });
-        }
+          })
+          .catch((error) => console.error("Error fetching markers:", error));
+      }
 
-        fetchMarkers();
+      fetchMarkers();
     </script>
-</body>
+  </body>
 </html>

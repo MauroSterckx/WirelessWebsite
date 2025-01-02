@@ -99,6 +99,26 @@ def api_markers():
         }
     } for marker in markers])
 
+@app.route('/api/markers/<int:marker_id>', methods=['DELETE'])
+def delete_marker(marker_id):
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    # Controleer of de marker bestaat
+    c.execute('SELECT * FROM markers WHERE id = ?', (marker_id,))
+    marker = c.fetchone()
+
+    if marker is None:
+        conn.close()
+        return jsonify({"error": "Marker niet gevonden"}), 404
+
+    # Verwijder de marker
+    c.execute('DELETE FROM markers WHERE id = ?', (marker_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": f"Marker met ID {marker_id} verwijderd"}), 200
+
 if __name__ == '__main__':
     init_db()  # Zorg ervoor dat de database en tabel wordt aangemaakt bij opstarten
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)

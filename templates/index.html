@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="nl">
-  <head>
+  <head id="head">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Leaflet Map</title>
@@ -16,6 +16,10 @@
         height: 30vh;
       }
     </style>
+    <p>Gebruik het dropdownmenu hieronder om te filteren op model:</p>
+    <select id="filter-model" onchange="filterMarkers()">
+      <option value="">Alle modellen</option>
+    </select>
   </head>
   <body>
     <head id="head">
@@ -47,9 +51,31 @@
           .then((data) => {
             data.forEach((marker) => {
               if (marker.lat && marker.lng) {
+                // Genereer de popup-content met extra informatie
+                const popupContent = `
+            <b>${marker.name}</b><br>
+            Latitude: ${marker.lat}<br>
+            Longitude: ${marker.lng}<br>
+            ${
+              marker.tpms_data
+                ? `
+              <hr>
+              <b>TPMS Data:</b><br>
+              Model: ${marker.tpms_data.model}<br>
+              ID: ${marker.tpms_data.id}<br>
+              Pressure: ${marker.tpms_data.Pressure} kPa<br>
+              Temperature: ${marker.tpms_data.Temperature}°C<br>
+              Status: ${marker.tpms_data.status}<br>
+              Integrity: ${marker.tpms_data.Integrity}<br>
+            `
+                : ""
+            }
+          `;
+
+                // Voeg de marker toe aan de kaart met een popup
                 L.marker([marker.lat, marker.lng])
                   .addTo(map)
-                  .bindPopup(marker.name);
+                  .bindPopup(popupContent);
               } else {
                 console.error(`Invalid marker coordinates: ${marker}`);
               }

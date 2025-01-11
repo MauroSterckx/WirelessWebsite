@@ -5,6 +5,8 @@ import matplotlib
 matplotlib.use('Agg')  # Zet de matplotlib backend naar 'Agg'
 import matplotlib.pyplot as plt
 from io import BytesIO
+import folium
+from folium.plugins import HeatMap
 
 app = Flask(__name__)
 CORS(app)
@@ -289,6 +291,36 @@ def generate_pressure_temp_scatter():
     buf.seek(0)
     plt.close()
     return send_file(buf, mimetype='image/png')
+
+@app.route('/heatmap')
+def generate_heatmap():
+    # Data ophalen uit de database
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT latitude, longitude FROM markers WHERE latitude IS NOT NULL AND longitude IS NOT NULL')
+    data = c.fetchall()
+    conn.close()
+
+    # Verwerk data naar een lijst van (latitude, longitude) tuples
+    locations = [(row['latitude'], row['longitude']) for row in data]
+
+    if not locations:
+        return "Geen data beschikbaar om een heatmap te genereren", 400
+
+    # Maak een folium map aan
+    m = folium.Map(location=[51.123957, 4.370547], zoom_start=13)
+
+    # Voeg een HeatMap laag toe aan de kaart
+    HeatMap(locations).add_to(m)
+
+    # Sla de kaart op in memory
+    heatmap_html = BytesIO()
+    m.save(heatmap_html, close_file=False)
+    heatmap_html.seek(0)
+
+    # Stuur de kaart als HTML terug
+    return send_file(heatmap_html, mimetype='text/html', as_attachment=False, download_name='heatmap.html')
+
 if __name__ == '__main__':
     init_db()  # Zorg ervoor dat de database en tabel wordt aangemaakt bij opstarten
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,6 +1,8 @@
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template, send_file, url_for
 from flask_cors import CORS
 import sqlite3
+import matplotlib
+matplotlib.use('Agg')  # Zet de matplotlib backend naar 'Agg'
 import matplotlib.pyplot as plt
 from io import BytesIO
 
@@ -123,6 +125,17 @@ def delete_marker(marker_id):
 
 #### Grafieken
 
+@app.route('/graphs')
+def graphs():
+    # Provide the graph images to be displayed on the page
+    graph_urls = {
+        "Pressure and Temperature Over Time": "/graph",
+        "Model Graph": "/model_graph",
+        "Pressure Histogram": "/pressure_histogram",
+        "Pressure vs Temperature Scatter": "/pressure_temp_scatter"
+    }
+    return render_template('graphs.html', graph_urls=graph_urls)
+
 @app.route('/graph')
 def generate_graph():
     # Data ophalen uit de database
@@ -189,6 +202,93 @@ def generate_graph():
     # Grafiek retourneren als afbeelding
     return send_file(buf, mimetype='image/png')
 
+@app.route('/model_graph')
+def generate_model_graph():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT model, pressure, temperature FROM markers WHERE pressure BETWEEN 50 AND 1000')
+    data = c.fetchall()
+    conn.close()
+
+    models = {}
+    for row in data:
+        if row['model'] not in models:
+            models[row['model']] = {'pressure': [], 'temperature': []}
+        models[row['model']]['pressure'].append(row['pressure'])
+        models[row['model']]['temperature'].append(row['temperature'])
+
+    # Berekeningen voor statistieken per model
+    avg_pressures = {model: sum(models[model]['pressure']) / len(models[model]['pressure']) for model in models}
+    avg_temperatures = {model: sum(models[model]['temperature']) / len(models[model]['temperature']) for model in models}
+
+    # Grafiek maken
+    plt.figure(figsize=(10, 6))
+    plt.bar(avg_pressures.keys(), avg_pressures.values(), label='Gemiddelde Druk (kPa)', alpha=0.6)
+    plt.plot(list(avg_temperatures.keys()), list(avg_temperatures.values()), label='Gemiddelde Temperatuur (°C)', color='red', marker='o')
+
+    # Duidelijke titel en labels
+    plt.title('Gemiddelde Druk en Temperatuur per Model', fontsize=16)
+    plt.xlabel('Model', fontsize=12)
+    plt.ylabel('Waarde', fontsize=12)
+
+    # Voeg legende toe buiten de grafiek
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.grid(True)
+
+    buf = BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    plt.close()
+    return send_file(buf, mimetype='image/png')
+
+@app.route('/pressure_histogram')
+def generate_pressure_histogram():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT pressure FROM markers WHERE pressure BETWEEN 50 AND 1000')
+    data = c.fetchall()
+    conn.close()
+
+    pressures = [row['pressure'] for row in data]
+
+    # Histogram maken
+    plt.figure(figsize=(10, 6))
+    plt.hist(pressures, bins=20, color='blue', alpha=0.7)
+    plt.title('Verdeling van Drukwaarden (kPa)', fontsize=16)
+    plt.xlabel('Druk (kPa)', fontsize=12)
+    plt.ylabel('Aantal Sensores', fontsize=12)
+    plt.grid(True)
+
+    buf = BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    plt.close()
+    return send_file(buf, mimetype='image/png')
+
+@app.route('/pressure_temp_scatter')
+def generate_pressure_temp_scatter():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT pressure, temperature FROM markers WHERE pressure BETWEEN 50 AND 1000 AND temperature IS NOT NULL')
+    data = c.fetchall()
+    conn.close()
+
+    pressures = [row['pressure'] for row in data]
+    temperatures = [row['temperature'] for row in data]
+
+    # Scatter plot maken
+    plt.figure(figsize=(10, 6))
+    plt.scatter(pressures, temperatures, color='purple', alpha=0.6)
+    plt.title('Relatie tussen Druk en Temperatuur', fontsize=16)
+    plt.xlabel('Druk (kPa)', fontsize=12)
+    plt.ylabel('Temperatuur (°C)', fontsize=12)
+    plt.grid(True)
+
+    buf = BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    plt.close()
+    return send_file(buf, mimetype='image/png')
 if __name__ == '__main__':
     init_db()  # Zorg ervoor dat de database en tabel wordt aangemaakt bij opstarten
     app.run(debug=True, host='0.0.0.0', port=5000)

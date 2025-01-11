@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grafieken - TPMS Data</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 20px;
+      }
+      h1 {
+        color: #2d3b44;
+      }
+      .graph-container {
+        margin: 20px;
+      }
+      .graph-container img {
+        max-width: 100%;
+        height: auto;
+      }
+      .graph-container h2 {
+        color: #555;
+      }
+    </style>
+  </head>
+  <nav>
+    <a href="/">Ga naar home</a>
+  </nav>
+  <body>
+    <h1>Bekijk de Grafieken van TPMS Data</h1>
+    <p>Bekijk de onderstaande grafieken die de TPMS data visualiseren:</p>
+
+    {% for title, url in graph_urls.items() %}
+    <div class="graph-container">
+      <h2>{{ title }}</h2>
+      <img src="{{ url }}" alt="{{ title }}" />
+    </div>
+    {% endfor %}
+  </body>
+</html>

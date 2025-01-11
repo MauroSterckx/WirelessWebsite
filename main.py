@@ -123,33 +123,66 @@ def delete_marker(marker_id):
 
 #### Grafieken
 
-# Route voor statische grafiek
 @app.route('/graph')
 def generate_graph():
     # Data ophalen uit de database
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute('SELECT pressure, temperature FROM markers')
+    c.execute('SELECT id, pressure, temperature FROM markers')
     data = c.fetchall()
     conn.close()
 
-    # Extract pressure en temperature
-    pressures = [row['pressure'] for row in data if row['pressure'] is not None]
+    # Extract data
+    indices = [row['id'] for row in data]  # ID's als x-as
+    pressures = [row['pressure'] for row in data if row['pressure'] is not None and 50 <= row['pressure'] <= 1000]  # Filter uitschieters
     temperatures = [row['temperature'] for row in data if row['temperature'] is not None]
 
+    # Controle op lege datasets
+    if not pressures or not temperatures:
+        return "Geen data beschikbaar om te visualiseren", 400
+
+    # Berekeningen voor statistieken
+    avg_pressure = sum(pressures) / len(pressures) if pressures else 0
+    avg_temperature = sum(temperatures) / len(temperatures) if temperatures else 0
+
     # Grafiek maken
-    plt.figure(figsize=(10, 6))
-    plt.plot(pressures, label='Pressure (kPa)', color='blue', marker='o')
-    plt.plot(temperatures, label='Temperature (°C)', color='red', marker='x')
-    plt.title('TPMS Data: Pressure vs Temperature')
-    plt.xlabel('Sample Index')
-    plt.ylabel('Value')
-    plt.legend()
-    plt.grid(True)
+    plt.figure(figsize=(12, 8))
+    plt.plot(indices[:len(pressures)], pressures, label='Druk (kPa)', color='blue', marker='o', linestyle='-')
+    plt.plot(indices[:len(temperatures)], temperatures, label='Temperatuur (°C)', color='red', marker='x', linestyle='--')
+
+    # Duidelijke titel en labels
+    plt.title('TPMS Data: Druk en Temperatuur Over Tijd', fontsize=16)
+    plt.xlabel('Data ID (of Tijd)', fontsize=12)
+    plt.ylabel('Waarden', fontsize=12)
+
+    # Voeg gemiddelde waarden toe aan de grafiek
+    plt.axhline(y=avg_pressure, color='blue', linestyle=':', label=f'Gemiddelde Druk: {avg_pressure:.2f} kPa')
+    plt.axhline(y=avg_temperature, color='red', linestyle=':', label=f'Gemiddelde Temperatuur: {avg_temperature:.2f}°C')
+
+    # Voeg grid en legende toe
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.legend(fontsize=12, loc='center left', bbox_to_anchor=(1, 0.5))  # Legende naar de zijkant
+
+    # Annotatie voor maximale druk en temperatuur
+    if pressures:
+        max_pressure = max(pressures)
+        max_index = indices[pressures.index(max_pressure)]
+        plt.annotate(f'Max druk: {max_pressure} kPa', xy=(max_index, max_pressure),
+                     xytext=(max_index + 2, max_pressure + 10),
+                     arrowprops=dict(facecolor='blue', arrowstyle='->'),
+                     fontsize=10)
+
+    if temperatures:
+        max_temp = max(temperatures)
+        max_index = indices[temperatures.index(max_temp)]
+        plt.annotate(f'Max temp: {max_temp}°C', xy=(max_index, max_temp),
+                     xytext=(max_index + 2, max_temp + 1),
+                     arrowprops=dict(facecolor='red', arrowstyle='->'),
+                     fontsize=10)
 
     # Grafiek opslaan in memory
     buf = BytesIO()
-    plt.savefig(buf, format='png')
+    plt.savefig(buf, format='png', bbox_inches='tight')  # bbox_inches='tight' zorgt voor een strakkere lay-out
     buf.seek(0)
     plt.close()
 

@@ -13,28 +13,38 @@
         margin-right: 20vh; */
       }
       #head {
-        height: 30vh;
+        height: 20vh;
       }
     </style>
-    <p>Gebruik het dropdownmenu hieronder om te filteren op model:</p>
-    <select id="filter-model" onchange="filterMarkers()">
-      <option value="">Alle modellen</option>
-    </select>
   </head>
   <body>
+    <nav>
+      <a href="/graph">Bekijk de grafiek</a>
+    </nav>
     <head id="head">
+      <h1>Project: Wireless Technologies & Wardriving</h1>
       <p>
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Expedita
-        quaerat culpa, rerum officia voluptatum libero, exercitationem ipsa
-        distinctio deserunt eligendi voluptates iure aliquid architecto eum
-        tempore explicabo recusandae esse soluta?
+        Welkom op onze webpagina voor het visualiseren van TPMS-data (Tire
+        Pressure Monitoring System). Dit project is een onderdeel van onze
+        studie over draadloze technologieën, waarbij we het gedrag en de
+        functionaliteit van TPMS-sensoren onderzoeken.
       </p>
       <p>
-        Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ipsa in, omnis
-        exercitationem expedita quos laboriosam illum. Ullam facere nihil eos,
-        tempore exercitationem quis porro maxime obcaecati, eaque, consectetur
-        quaerat eveniet.
+        Via wardriving-technieken verzamelen we live gegevens van TPMS-sensoren
+        in de omgeving. Deze data, zoals bandenspanning, temperatuur, en
+        sensor-ID's, wordt hier weergegeven op een interactieve kaart. Klik op
+        de markers om gedetailleerde informatie over de gevonden sensoren te
+        bekijken.
       </p>
+      <p>
+        Dit project toont het potentieel van draadloze technologieën, maar
+        benadrukt ook het belang van beveiliging en privacy in moderne
+        netwerken.
+      </p>
+      <p>Gebruik het dropdownmenu hieronder om te filteren op model:</p>
+      <select id="filter-model" onchange="filterMarkers()">
+        <option value="">Alle modellen</option>
+      </select>
     </head>
     <div id="map"></div>
     <script>

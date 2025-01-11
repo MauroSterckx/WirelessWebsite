@@ -1,6 +1,8 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
 import sqlite3
+import matplotlib.pyplot as plt
+from io import BytesIO
 
 app = Flask(__name__)
 CORS(app)
@@ -118,6 +120,41 @@ def delete_marker(marker_id):
     conn.close()
 
     return jsonify({"message": f"Marker met ID {marker_id} verwijderd"}), 200
+
+#### Grafieken
+
+# Route voor statische grafiek
+@app.route('/graph')
+def generate_graph():
+    # Data ophalen uit de database
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT pressure, temperature FROM markers')
+    data = c.fetchall()
+    conn.close()
+
+    # Extract pressure en temperature
+    pressures = [row['pressure'] for row in data if row['pressure'] is not None]
+    temperatures = [row['temperature'] for row in data if row['temperature'] is not None]
+
+    # Grafiek maken
+    plt.figure(figsize=(10, 6))
+    plt.plot(pressures, label='Pressure (kPa)', color='blue', marker='o')
+    plt.plot(temperatures, label='Temperature (°C)', color='red', marker='x')
+    plt.title('TPMS Data: Pressure vs Temperature')
+    plt.xlabel('Sample Index')
+    plt.ylabel('Value')
+    plt.legend()
+    plt.grid(True)
+
+    # Grafiek opslaan in memory
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    plt.close()
+
+    # Grafiek retourneren als afbeelding
+    return send_file(buf, mimetype='image/png')
 
 if __name__ == '__main__':
     init_db()  # Zorg ervoor dat de database en tabel wordt aangemaakt bij opstarten

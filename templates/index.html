@@ -44,44 +44,81 @@
         attribution: "© OpenStreetMap contributors",
       }).addTo(map);
 
-      // Haal markers op van de API en voeg ze toe aan de kaart
+      let allMarkers = []; // Om alle markers op te slaan
+      let markerLayer = L.layerGroup().addTo(map); // Laag voor dynamisch filteren
+
+      // Haal markers op van de API
       function fetchMarkers() {
         fetch("/api/markers")
           .then((response) => response.json())
           .then((data) => {
-            data.forEach((marker) => {
-              if (marker.lat && marker.lng) {
-                // Genereer de popup-content met extra informatie
-                const popupContent = `
-            <b>${marker.name}</b><br>
-            Latitude: ${marker.lat}<br>
-            Longitude: ${marker.lng}<br>
-            ${
-              marker.tpms_data
-                ? `
-              <hr>
-              <b>TPMS Data:</b><br>
-              Model: ${marker.tpms_data.model}<br>
-              ID: ${marker.tpms_data.id}<br>
-              Pressure: ${marker.tpms_data.Pressure} kPa<br>
-              Temperature: ${marker.tpms_data.Temperature}°C<br>
-              Status: ${marker.tpms_data.status}<br>
-              Integrity: ${marker.tpms_data.Integrity}<br>
-            `
-                : ""
-            }
-          `;
-
-                // Voeg de marker toe aan de kaart met een popup
-                L.marker([marker.lat, marker.lng])
-                  .addTo(map)
-                  .bindPopup(popupContent);
-              } else {
-                console.error(`Invalid marker coordinates: ${marker}`);
-              }
-            });
+            allMarkers = data; // Sla alle markers op
+            updateDropdown(data); // Update het dropdownmenu
+            displayMarkers(data); // Toon alle markers
           })
           .catch((error) => console.error("Error fetching markers:", error));
+      }
+
+      // Toon markers op de kaart
+      function displayMarkers(markers) {
+        markerLayer.clearLayers(); // Verwijder bestaande markers
+        markers.forEach((marker) => {
+          if (marker.lat && marker.lng) {
+            const popupContent = `
+        <b>${marker.name}</b><br>
+        Latitude: ${marker.lat}<br>
+        Longitude: ${marker.lng}<br>
+        ${
+          marker.tpms_data
+            ? `
+          <hr>
+          <b>TPMS Data:</b><br>
+          Model: ${marker.tpms_data.model}<br>
+          ID: ${marker.tpms_data.id}<br>
+          Pressure: ${marker.tpms_data.Pressure} kPa<br>
+          Temperature: ${marker.tpms_data.Temperature}°C<br>
+          Status: ${marker.tpms_data.status}<br>
+          Integrity: ${marker.tpms_data.Integrity}<br>
+        `
+            : ""
+        }
+      `;
+            L.marker([marker.lat, marker.lng])
+              .addTo(markerLayer)
+              .bindPopup(popupContent);
+          } else {
+            console.error(`Invalid marker coordinates: ${marker}`);
+          }
+        });
+      }
+
+      // Update het dropdownmenu
+      function updateDropdown(markers) {
+        const dropdown = document.getElementById("filter-model");
+        const models = new Set(
+          markers.map((marker) => marker.tpms_data?.model).filter(Boolean)
+        );
+
+        // Voeg opties toe aan het dropdownmenu
+        models.forEach((model) => {
+          const option = document.createElement("option");
+          option.value = model;
+          option.textContent = model;
+          dropdown.appendChild(option);
+        });
+      }
+
+      // Filter markers op basis van het geselecteerde model
+      function filterMarkers() {
+        const selectedModel = document.getElementById("filter-model").value;
+        if (selectedModel === "") {
+          displayMarkers(allMarkers); // Toon alle markers
+        } else {
+          const filteredMarkers = allMarkers.filter(
+            (marker) => marker.tpms_data?.model === selectedModel
+          );
+          displayMarkers(filteredMarkers); // Toon gefilterde markers
+        }
       }
 
       fetchMarkers();
